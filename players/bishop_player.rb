@@ -1,4 +1,5 @@
 class BishopPlayer
+  
   def name
     "Bishop Player"
   end
@@ -7,25 +8,45 @@ class BishopPlayer
     # not at the perimeter
     # not together
     # same orientation?
+    ships = [Ship.new_random(2), Ship.new_random(3), Ship.new_random(3), Ship.new_random(4), Ship.new_random(5)]
+    while(ships.detect { |ship| ship.next_to_any_of_these_ships?(ships) })
+      ships = [Ship.new_random(2), Ship.new_random(3), Ship.new_random(3), Ship.new_random(4), Ship.new_random(5)]
+    end
     
-    [
-      [9, 0, 5, :across],
-      [0, 1, 4, :across],
-      [0, 2, 3, :across],
-      [0, 3, 3, :across],
-      [0, 4, 2, :across]
-    ]
+    return ships.map(&:to_standard_format)
   end
 
-  def take_turn(state, ships_remaining)
+  def take_turn(raw_state, ships_remaining)
     # close off areas
     # don't bother looking in areas smaller than the smallest ship left
+    # that's it
     
-    puts "ships remaining: #{ships_remaining.inspect}"
-    puts "co-ordinates (x,y)?"
-    x, y = $stdin.gets.split(",").map{ |a| a.strip.to_i }
+    # try every move and go for it if it lowers the number of areas
+    # the largest ship left can hide in
+    state = State.new(raw_state)
+    squares = state.squares_in_gap_of_length(ships_remaining.sort.last)
+    
+    raise "No squares!" if squares.empty?
+    
+    least_squares = squares.length
+    puts squares.length
+    best_shot = nil
+    squares.each do |shot|
+      new_raw_state = Marshal.load(Marshal.dump(raw_state)) # deep clone
+      new_raw_state[shot[1]][shot[0]] = :miss
+      new_state = State.new(new_raw_state)
+      new_squares = new_state.squares_in_gap_of_length(ships_remaining.sort.last)
+      
+      # raise "No squares!" if new_squares.empty?
+      # puts "Shooting at #{shot[0]},#{shot[1]} leaves #{new_state.squares_in_gap_of_length(ships_remaining.sort.last).length} squares."
+      if new_squares.length <= least_squares
+        least_squares = new_squares.length
+        best_shot = shot
+      end
+    end
+    
+    return best_shot
   end
-  
   
   private
   
@@ -38,5 +59,167 @@ class BishopPlayer
   def board_areas(state)
     
   end
+end
+
+
+class State
+  attr_reader :raw_state
+  def initialize(raw_state)
+    @raw_state = raw_state
+  end
   
+  
+  def columns
+    columns = []
+    10.times do |col_num|
+      column = []
+      10.times do |row_num|
+        next unless @raw_state[row_num]
+        column << @raw_state[row_num][col_num]
+      end
+      columns << column unless column.empty?
+    end
+    return columns
+  end
+  
+  def squares_with_results
+    squares = []
+    10.times do |row_num|
+      row = @raw_state[row_num]
+      next unless row
+      
+      10.times do |col_num|
+        squares << { :coords => [row_num, col_num], :result => row[col_num] }
+      end
+    end
+    return squares
+  end
+  
+  def squares_in_gap_of_length(length)
+    squares = []
+    
+    # Rows
+    @raw_state.length.times do |row_num|
+      row = @raw_state[row_num]
+      
+      first_instances = []
+      10.times do |index|
+        first_instances << index if (row[index] != :miss and (index == 0 or row[index - 1] == :miss))
+      end
+      
+      first_instances.each do |first_instance|
+        if !row[first_instance, length].uniq.include?(:miss) and first_instance + length <= 10
+          stop_adding = false
+          col_num = first_instance
+          
+          row[first_instance..-1].each do |square|
+            stop_adding = true if square == :miss
+            next if stop_adding
+            
+            squares << [col_num, row_num] unless square == :hit
+            col_num += 1
+          end 
+        end
+      end
+    end
+    
+    # Columns
+    columns.length.times do |col_num|
+      column = columns[col_num]
+      
+      first_instances = []
+      10.times do |index|
+        first_instances << index if (column[index] != :miss and (index == 0 or column[index - 1] == :miss))
+      end
+      
+      first_instances.each do |first_instance|
+        if !column[first_instance, length].uniq.include?(:miss) and first_instance + length <= columns.length
+          stop_adding = false
+          row_num = first_instance
+          
+          column[first_instance..-1].each do |square|
+            stop_adding = true if square == :miss
+            next if stop_adding
+            
+            squares << [col_num, row_num] unless square == :hit
+            row_num += 1
+          end 
+        end
+      end
+    end
+    
+    return squares.uniq
+  end
+end
+
+
+class Ship
+  attr_accessor :x, :y, :length, :orientation
+  def initialize(array)
+    @x = array[0]
+    @y = array[1]
+    @length = array[2]
+    @orientation = array[3]
+  end
+  
+  def valid?
+    return false unless (2..5).include? @length
+    return false unless [:across, :down].include? @orientation
+    self.squares.each do |square|
+      return false unless (0..9).include? square[0]
+      return false unless (0..9).include? square[1]
+    end
+    return true
+  end
+  
+  def self.new_random(length)
+    ship = self.new([0,0,0,:across])
+    
+    while !ship.valid?
+      ship.x = rand(10)
+      ship.y = rand(10)
+      ship.length = length
+      ship.orientation = [:across, :down][rand(2)]
+    end
+    
+    return ship
+  end
+  
+  def to_standard_format
+    [@x, @y, @length, @orientation]
+  end
+  
+  def next_to_any_of_these_ships?(other_ships)
+    other_ships.each do |other_ship|
+      next if self == other_ship
+      return true if self.next_to_other_ship?(other_ship)
+    end
+    return false
+  end
+  
+  def next_to_other_ship?(other_ship)
+    raise "Comparing self with self - of course it's next to it!" if self == other_ship
+    self.squares.each do |square|
+      other_ship.squares.each do |other_square|
+        return true if (square[0] == other_square[0] and (square[1] - other_square[1]).abs <= 1)
+        return true if (square[1] == other_square[1] and (square[0] - other_square[0]).abs <= 1)
+      end
+    end
+    return false
+  end
+  
+  def squares
+    squares = []
+    case @orientation
+    when :down
+      @length.times do |extension|
+        squares << [@x, @y + extension]
+      end
+    when :across
+      @length.times do |extension|
+        squares << [@x + extension, @y]
+      end  
+    end
+    return squares
+  end
 end
