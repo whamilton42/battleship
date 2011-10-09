@@ -125,4 +125,27 @@ class StateTest < MiniTest::Unit::TestCase
     assert state.squares_in_gap_of_length(5).any?
   end
 
+  def test_next_part_of_ship
+    # Given a state with two hits, and the 3-length ship still left..
+    raw_state = []
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    
+    state = State.new(raw_state)
+    square = state.next_part_of_ship([3,5])
+    # puts "#{square[0]}, #{square[1]}"
+    
+    assert [[2,4],[2,5],[3,3],[3,6],[4,4],[4,5]].include? square
+    assert [[2,4],[2,5],[3,3],[3,6],[4,4],[4,5]].include? state.next_part_of_ship([3,5])
+    # assert [[3,3],[3,6]].include? state.next_part_of_ship([3,4])
+    # assert [[3,3],[3,6]].include? state.next_part_of_ship([3,5])
+  end
 end

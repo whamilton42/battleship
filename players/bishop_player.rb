@@ -1,5 +1,7 @@
 class BishopPlayer
   
+  attr_accessor :last_state, :last_ships_remaining, :last_shot
+  
   def name
     "Bishop Player"
   end
@@ -16,21 +18,37 @@ class BishopPlayer
     return ships.map(&:to_standard_format)
   end
 
+
   def take_turn(raw_state, ships_remaining)
+    state = State.new(raw_state)
+    
+    just_made_a_hit = (last_state and raw_state.flatten.select{|square| square == :hit}.length > last_state.flatten.select{|square| square == :hit}.length)
+    
+    just_destroyed_a_ship = (last_ships_remaining and ships_remaining.length < last_ships_remaining.length)
+    
+    if just_made_a_hit and !just_destroyed_a_ship
+      # last_shot
+      
+      # raise "did both"
+      puts "did both"
+    end
+    
+    
+    
     # close off areas
     # don't bother looking in areas smaller than the smallest ship left
     # that's it
     
     # try every move and go for it if it lowers the number of areas
     # the largest ship left can hide in
-    state = State.new(raw_state)
+    
     squares = state.squares_in_gap_of_length(ships_remaining.sort.last)
     
     raise "No squares!" if squares.empty?
     
     least_squares = squares.length
-    puts squares.length
-    best_shot = nil
+    # puts squares.length
+    best_shots = []
     squares.each do |shot|
       new_raw_state = Marshal.load(Marshal.dump(raw_state)) # deep clone
       new_raw_state[shot[1]][shot[0]] = :miss
@@ -41,11 +59,21 @@ class BishopPlayer
       # puts "Shooting at #{shot[0]},#{shot[1]} leaves #{new_state.squares_in_gap_of_length(ships_remaining.sort.last).length} squares."
       if new_squares.length <= least_squares
         least_squares = new_squares.length
-        best_shot = shot
+        if new_squares.length < least_squares
+          best_shots << shot
+        else
+          best_shots = [shot]
+        end
       end
     end
     
-    return best_shot
+    shot = best_shots.shuffle.first
+    
+    @last_state = raw_state
+    @last_ships_remaining = ships_remaining
+    @last_shot = shot
+    
+    return shot
   end
   
   private
@@ -68,6 +96,9 @@ class State
     @raw_state = raw_state
   end
   
+  def rows
+    return @raw_state
+  end
   
   def columns
     columns = []
@@ -149,6 +180,35 @@ class State
     end
     
     return squares.uniq
+  end
+  
+  def next_part_of_ship(square)
+    
+    # Below
+     if raw_state[square[1]+1][square[0]] == :hit
+       10.times do |increment|
+         next if increment == 0
+         next if square[0] + increment > 9
+         # puts [square[0] + increment, square[1]]
+         raise "below"
+         return [square[0] + increment, square[1]]  if raw_state[square[0] + increment][square[1]] == :unknown
+       end
+     end
+     
+     
+    # Above
+    if raw_state[square[1]-1][square[0]] == :hit
+      10.times do |increment|
+        next if increment == 0
+        next if square[0] - increment > 9
+        # raise "above"
+        # puts [square[0] - increment, square[1]]
+        return [square[0] - increment, square[1]]  if raw_state[square[0] - increment][square[1]] == :unknown
+      end
+    end
+    
+ 
+    # state.rows
   end
 end
 

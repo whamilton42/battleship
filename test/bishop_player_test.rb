@@ -61,7 +61,6 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
     player = BishopPlayer.new
     new_shot_coords = player.take_turn(state, [2])
     
-    puts new_shot_coords[0].to_s + "-" + new_shot_coords[1].to_s
     assert [[3, 9],[4,9]].include? new_shot_coords
   end
   
@@ -88,7 +87,6 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
   end
   
   def test_next_turn_limits_space_for_largest_ship
-    puts "SPACE -------------------------"
     # If we have a board, with two overlapping gaps of four..
     state = []
     state << [:miss,    :miss,    :miss,    :unknown, :unknown, :miss,    :miss,    :miss,    :miss,    :miss]
@@ -122,6 +120,40 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
       assert_equal false, [0,9].include?(ship[0])
       assert_equal false, [0,9].include?(ship[1])
     end
+  end
+  
+  def test_player_goes_after_just_found_ship
+    # Given a state with two hits, and the 3-length ship still left..
+    first_state = []
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    first_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    
+    second_state = []
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    second_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+
+    player = BishopPlayer.new
+    first_shot = player.take_turn(first_state, [4,3,3,2])
+    second_shot = player.take_turn(first_state, [4,3,3,2])
+    
+    # ..the player should go after either the square above or the square below.
+    assert [[3,4],[3,5]].include? second_shot
   end
   
 end
