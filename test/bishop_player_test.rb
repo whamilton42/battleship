@@ -59,6 +59,7 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
     state << [:miss,    :miss,    :miss,    :unknown, :unknown, :miss,    :miss,    :miss,    :miss,    :miss]
     
     player = BishopPlayer.new
+    player.turn = 5
     new_shot_coords = player.take_turn(state, [2])
     
     assert [[3, 9],[4,9]].include? new_shot_coords
@@ -80,6 +81,7 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
     
     # ..then if only the length-3 ship is left..
     player = BishopPlayer.new
+    player.turn = 5
     new_shot_coords = player.take_turn(state, [3])
     
     # ..the player should hit that gap.
@@ -102,24 +104,11 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
 
     # ..then if the 4-length ship is left..
     player = BishopPlayer.new
+    player.turn = 5
     new_shot_coords = player.take_turn(state, [4,3,3,2])
 
     # ..the player should go for the square that limits the spaces it can be.
     assert_equal [3,6], new_shot_coords
-  end
-  
-  def test_starting_position_contains_no_perimter_ships
-    skip "Not sure if we want this at all.."
-    # Given a new game..
-    bishop = ::BishopPlayer.new
-    starting_positions = bishop.new_game
-    
-    # ..none of the positions should be on the edge.
-    # i.e., no 0s or 9s.
-    starting_positions.each do |ship|
-      assert_equal false, [0,9].include?(ship[0])
-      assert_equal false, [0,9].include?(ship[1])
-    end
   end
   
 end

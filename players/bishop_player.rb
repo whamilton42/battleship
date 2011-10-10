@@ -176,6 +176,50 @@ class State
     return []
   end
 
+  def squares_on_the_end_of_longest_hit_streak
+    squares = []
+    @biggest_streak = 0
+    
+    row_squares     = squares_on_the_end_of_longest_hit_streak_for_lines(@biggest_streak, rows,     column = false)
+    column_squares  = squares_on_the_end_of_longest_hit_streak_for_lines(@biggest_streak, columns,  column = true)
+    
+    return column_squares if column_squares.any?
+    return row_squares    if row_squares.any?
+    
+    return []
+  end
+        
+  def squares_on_the_end_of_longest_hit_streak_for_lines(biggest_streak, lines, column = false)
+    squares = []
+    
+    10.times do |line_index|
+      line = lines[line_index]
+      
+      10.times do |start_point|
+        10.times do |end_point|
+          if line[start_point..end_point].uniq == [:hit]
+            streak = end_point - start_point + 1
+            if streak > @biggest_streak
+              squares = []
+              @biggest_streak = streak
+              
+              if column
+                squares << [line_index, start_point - 1]
+                squares << [line_index, start_point + streak]
+              else
+                squares << [start_point - 1, line_index]
+                squares << [start_point + streak, line_index]
+              end
+            end
+          end
+        end
+      end
+        
+    end
+    
+    return squares
+  end
+
 end
 
 

@@ -184,4 +184,44 @@ class StateTest < MiniTest::Unit::TestCase
     # ..this method should go for the most juicy.
     assert_equal [[1,3]], state.unknown_squares_next_to_a_hit
   end
+  
+  def test_squares_on_the_end_of_longest_hit_streak_for_column
+    # Given one spot with an isolated hit, and another with two in a row..
+    raw_state = []
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :hit,     :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    
+    state = State.new(raw_state)
+
+    # ..this method should go a square by the two-hits-in-a-row.
+    assert_equal [[3,3],[3,6]], state.squares_on_the_end_of_longest_hit_streak
+  end
+  
+  def test_squares_on_the_end_of_longest_hit_streak_for_row
+    # Given one spot with an isolated hit, and another with two in a row..
+    raw_state = []
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :hit,     :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :hit,     :hit,     :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    
+    state = State.new(raw_state)
+
+    # ..this method should go a square by the three-hits-in-a-row.
+    assert_equal [[2,5],[6,5]], state.squares_on_the_end_of_longest_hit_streak
+  end
 end
