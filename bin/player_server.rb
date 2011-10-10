@@ -29,6 +29,7 @@ module Battleship
     def initialize(secret, object, port)
       @secret = secret
       @object = object
+      puts port
       DRb.start_service "druby://0.0.0.0:#{port}", self
     end
 

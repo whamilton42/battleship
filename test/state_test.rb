@@ -125,8 +125,8 @@ class StateTest < MiniTest::Unit::TestCase
     assert state.squares_in_gap_of_length(5).any?
   end
 
-  def test_next_part_of_ship
-    # Given a state with two hits, and the 3-length ship still left..
+  def test_state_finds_squares_next_to_hits
+    # Given a state with a couple of hits..
     raw_state = []
     raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
     raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
@@ -140,12 +140,48 @@ class StateTest < MiniTest::Unit::TestCase
     raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
     
     state = State.new(raw_state)
-    square = state.next_part_of_ship([3,5])
-    # puts "#{square[0]}, #{square[1]}"
+
+    # ..this method should fit all the surrounding :unknown squares.
+    assert_equal [[2,4],[2,5],[3,3],[3,6],[4,4],[4,5]].sort, state.unknown_squares_next_to_a_hit.sort
+  end
+  
+  def test_state_finds_squares_next_to_greatest_number_of_hits
+    # Given one spot with some isolated hits, and another with a juicy middle target..
+    raw_state = []
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :hit,     :unknown, :hit,     :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
     
-    assert [[2,4],[2,5],[3,3],[3,6],[4,4],[4,5]].include? square
-    assert [[2,4],[2,5],[3,3],[3,6],[4,4],[4,5]].include? state.next_part_of_ship([3,5])
-    # assert [[3,3],[3,6]].include? state.next_part_of_ship([3,4])
-    # assert [[3,3],[3,6]].include? state.next_part_of_ship([3,5])
+    state = State.new(raw_state)
+
+    # ..this method should go for the juicy middle.
+    assert_equal [[6,7]], state.unknown_squares_next_to_a_hit
+  end
+  
+  def test_state_finds_squares_next_to_greatest_number_of_hits_when_there_are_two_juicy_choices
+    # Given one spot with some isolated hits, and another with a juicy middle target, and another even juicier spot..
+    raw_state = []
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :hit,     :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :hit,     :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :hit,     :unknown, :hit,     :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    raw_state << [:unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown, :unknown]
+    
+    state = State.new(raw_state)
+
+    # ..this method should go for the most juicy.
+    assert_equal [[1,3]], state.unknown_squares_next_to_a_hit
   end
 end

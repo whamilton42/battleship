@@ -1,7 +1,7 @@
 class BishopPlayer
-  
-  attr_accessor :last_state, :last_ships_remaining, :last_shot
-  
+
+  attr_accessor :turn, :previous_shots
+
   def name
     "Bishop Player"
   end
@@ -20,20 +20,19 @@ class BishopPlayer
 
 
   def take_turn(raw_state, ships_remaining)
-    state = State.new(raw_state)
+    @turn ||= 0
+    @turn += 1
     
-    just_made_a_hit = (last_state and raw_state.flatten.select{|square| square == :hit}.length > last_state.flatten.select{|square| square == :hit}.length)
-    
-    just_destroyed_a_ship = (last_ships_remaining and ships_remaining.length < last_ships_remaining.length)
-    
-    if just_made_a_hit and !just_destroyed_a_ship
-      # last_shot
-      
-      # raise "did both"
-      puts "did both"
+    # For the first few turns, with only a look-ahead of 1 turn, the shots fired will be all in the bottom right.
+    # To mix things up a bit, go random for the first few shots!
+    @previous_shots ||= []
+    if @turn < 5
+      shot = [rand(10),rand(10)]
+      while(@previous_shots.include? shot)
+        shot = [rand(10),rand(10)]
+      end
+      return shot
     end
-    
-    
     
     # close off areas
     # don't bother looking in areas smaller than the smallest ship left
@@ -42,21 +41,28 @@ class BishopPlayer
     # try every move and go for it if it lowers the number of areas
     # the largest ship left can hide in
     
-    squares = state.squares_in_gap_of_length(ships_remaining.sort.last)
+    state = State.new(raw_state)
+    if state.unknown_squares_next_to_a_hit.any?
+      state.unknown_squares_next_to_a_hit.each do |square|
+        puts "#{square[0]} #{square[1]}"
+      end
+      
+      squares = state.unknown_squares_next_to_a_hit
+    else
+      squares = state.squares_in_gap_of_length(ships_remaining.sort.last)
+    end
     
     raise "No squares!" if squares.empty?
     
-    least_squares = squares.length
-    # puts squares.length
+    least_squares = state.squares_in_gap_of_length(ships_remaining.sort.last).length
     best_shots = []
+    
     squares.each do |shot|
       new_raw_state = Marshal.load(Marshal.dump(raw_state)) # deep clone
       new_raw_state[shot[1]][shot[0]] = :miss
       new_state = State.new(new_raw_state)
       new_squares = new_state.squares_in_gap_of_length(ships_remaining.sort.last)
-      
-      # raise "No squares!" if new_squares.empty?
-      # puts "Shooting at #{shot[0]},#{shot[1]} leaves #{new_state.squares_in_gap_of_length(ships_remaining.sort.last).length} squares."
+
       if new_squares.length <= least_squares
         least_squares = new_squares.length
         if new_squares.length < least_squares
@@ -67,26 +73,11 @@ class BishopPlayer
       end
     end
     
-    shot = best_shots.shuffle.first
-    
-    @last_state = raw_state
-    @last_ships_remaining = ships_remaining
-    @last_shot = shot
-    
+    shot = best_shots.shuffle.first    
+    puts @turn
     return shot
   end
   
-  private
-  
-  def opponent_type
-    # How is the opponent playing?
-    # Since they're a computer, they should have set programmes.
-    # :permieter, :corner, :same_orientation
-  end
-  
-  def board_areas(state)
-    
-  end
 end
 
 
@@ -113,33 +104,19 @@ class State
     return columns
   end
   
-  def squares_with_results
-    squares = []
-    10.times do |row_num|
-      row = @raw_state[row_num]
-      next unless row
-      
-      10.times do |col_num|
-        squares << { :coords => [row_num, col_num], :result => row[col_num] }
-      end
-    end
-    return squares
-  end
-  
-  def squares_in_gap_of_length(length)
+  def squares_in_gap_of_length_in_lines(array, length, column = false)
     squares = []
     
-    # Rows
-    @raw_state.length.times do |row_num|
-      row = @raw_state[row_num]
+    array.length.times do |row_num|
+      row = array[row_num]
       
       first_instances = []
       10.times do |index|
         first_instances << index if (row[index] != :miss and (index == 0 or row[index - 1] == :miss))
       end
-      
+            
       first_instances.each do |first_instance|
-        if !row[first_instance, length].uniq.include?(:miss) and first_instance + length <= 10
+        if !row[first_instance, length].uniq.include?(:miss) and first_instance + length <= array.length
           stop_adding = false
           col_num = first_instance
           
@@ -147,69 +124,58 @@ class State
             stop_adding = true if square == :miss
             next if stop_adding
             
-            squares << [col_num, row_num] unless square == :hit
+            unless square == :hit
+              if column
+                squares << [row_num, col_num] 
+              else
+                squares << [col_num, row_num] 
+              end
+            end
+            
             col_num += 1
           end 
         end
       end
     end
     
-    # Columns
-    columns.length.times do |col_num|
-      column = columns[col_num]
-      
-      first_instances = []
-      10.times do |index|
-        first_instances << index if (column[index] != :miss and (index == 0 or column[index - 1] == :miss))
-      end
-      
-      first_instances.each do |first_instance|
-        if !column[first_instance, length].uniq.include?(:miss) and first_instance + length <= columns.length
-          stop_adding = false
-          row_num = first_instance
-          
-          column[first_instance..-1].each do |square|
-            stop_adding = true if square == :miss
-            next if stop_adding
-            
-            squares << [col_num, row_num] unless square == :hit
-            row_num += 1
-          end 
-        end
-      end
-    end
+    return squares
+  end
+  
+  def squares_in_gap_of_length(length)
+    squares = []
+    
+    # Rows
+    squares += squares_in_gap_of_length_in_lines(@raw_state, length)
+    squares += squares_in_gap_of_length_in_lines(columns, length, column = true)
     
     return squares.uniq
   end
   
-  def next_part_of_ship(square)
-    
-    # Below
-     if raw_state[square[1]+1][square[0]] == :hit
-       10.times do |increment|
-         next if increment == 0
-         next if square[0] + increment > 9
-         # puts [square[0] + increment, square[1]]
-         raise "below"
-         return [square[0] + increment, square[1]]  if raw_state[square[0] + increment][square[1]] == :unknown
-       end
-     end
-     
-     
-    # Above
-    if raw_state[square[1]-1][square[0]] == :hit
-      10.times do |increment|
-        next if increment == 0
-        next if square[0] - increment > 9
-        # raise "above"
-        # puts [square[0] - increment, square[1]]
-        return [square[0] - increment, square[1]]  if raw_state[square[0] - increment][square[1]] == :unknown
+  def unknown_squares_next_to_a_hit
+    4.times do |number_of_adjacent_hits|
+      number_of_adjacent_hits = 4 - number_of_adjacent_hits
+      squares = []
+      10.times do |row|
+        10.times do |column|
+          result = @raw_state[row][column]
+          next unless result == :unknown
+          
+          hits = 0
+          
+          hits += 1 if @raw_state[row - 1] and @raw_state[row - 1][column] == :hit
+          hits += 1 if @raw_state[row + 1] and @raw_state[row + 1][column] == :hit
+          hits += 1 if @raw_state[row][column - 1] == :hit
+          hits += 1 if @raw_state[row][column + 1] == :hit
+          
+          squares << [column,row] if hits == number_of_adjacent_hits
+        end
       end
+      return squares if squares.any?
     end
     
- 
-    # state.rows
+    return []
   end
+
 end
 
 
