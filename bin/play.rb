@@ -7,7 +7,7 @@ require "digest/sha1"
 require "forwardable"
 require "drb"
 
-DELAY = 0.2
+DELAY = 0.000000001
 PORT = 4432
 
 class PlayerClient
@@ -46,7 +46,7 @@ begin
 
   winners = []
 
-  3.times do |i|
+  50.times do |i|
     stderr = ""
     $stderr = StringIO.new(stderr)
 
@@ -66,11 +66,11 @@ begin
 
     puts "", "#{game.winner.name} won round #{i+1}!"
 
-    winners << game.winner.name
+    winners << game.winner.name + " (#{game.total_turn / 2} turns)"
 
     sleep 3
 
-    break if i == 1 && winners[0] == winners[1]
+    break if i == 50
 
     players.reverse!
   end

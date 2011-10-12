@@ -14,9 +14,12 @@ module Battleship
       end
     end
 
-    attr_reader :winner
+    attr_reader :winner, :total_turn
 
     def tick
+      @total_turn ||= 0
+      @total_turn += 1
+      
       player, opponent, board = @state[@turn]
       @turn = -(@turn - 1)
 

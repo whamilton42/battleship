@@ -59,7 +59,6 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
     state << [:miss,    :miss,    :miss,    :unknown, :unknown, :miss,    :miss,    :miss,    :miss,    :miss]
     
     player = BishopPlayer.new
-    player.turn = 5
     new_shot_coords = player.take_turn(state, [2])
     
     assert [[3, 9],[4,9]].include? new_shot_coords
@@ -81,7 +80,6 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
     
     # ..then if only the length-3 ship is left..
     player = BishopPlayer.new
-    player.turn = 5
     new_shot_coords = player.take_turn(state, [3])
     
     # ..the player should hit that gap.
@@ -104,11 +102,31 @@ class BishopPlayerTest < MiniTest::Unit::TestCase
 
     # ..then if the 4-length ship is left..
     player = BishopPlayer.new
-    player.turn = 5
     new_shot_coords = player.take_turn(state, [4,3,3,2])
 
     # ..the player should go for the square that limits the spaces it can be.
     assert_equal [3,6], new_shot_coords
+  end
+  
+  def test_next_turn_goes_for_end_of_long_ship
+    # If we have a board, with a long ship out there..
+    state = []
+    state << [:miss,    :miss,    :miss,    :unknown, :unknown, :miss,    :miss,    :miss,    :miss,    :miss]
+    state << [:miss,    :unknown, :miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :unknown, :miss]
+    state << [:miss,    :unknown, :miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :hit,     :miss]
+    state << [:unknown, :unknown, :miss,    :unknown, :miss,    :miss,    :unknown, :miss,    :hit,     :miss]
+    state << [:unknown, :unknown, :miss,    :unknown, :miss,    :miss,    :unknown, :miss,    :hit,     :miss]
+    state << [:unknown, :unknown, :miss,    :unknown, :miss,    :miss,    :miss,    :miss,    :hit,     :miss]
+    state << [:miss,    :unknown, :miss,    :unknown, :unknown, :miss,    :miss,    :miss,    :unknown, :miss]
+    state << [:miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :unknown, :unknown, :miss]
+    state << [:miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :miss,    :miss]
+    state << [:miss,    :miss,    :miss,    :unknown, :miss,    :miss,    :miss,    :miss,    :miss,    :miss]
+
+    player = BishopPlayer.new
+    new_shot_coords = player.take_turn(state, [4,3,3,2])
+
+    # ..the player should go for the squares above and below it.
+    assert [[8,1],[8,6]].include? new_shot_coords
   end
   
 end

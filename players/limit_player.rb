@@ -1,11 +1,15 @@
-class BishopPlayer
+class LimitPlayer
+
+  attr_accessor :turn, :previous_shots
 
   def name
-    "Bishop Player"
+    "Limit Player"
   end
 
   def new_game
+    # not at the perimeter
     # not together
+    # same orientation?
     ships = [Ship.new_random(2), Ship.new_random(3), Ship.new_random(3), Ship.new_random(4), Ship.new_random(5)]
     while(ships.detect { |ship| ship.next_to_any_of_these_ships?(ships) })
       ships = [Ship.new_random(2), Ship.new_random(3), Ship.new_random(3), Ship.new_random(4), Ship.new_random(5)]
@@ -16,12 +20,19 @@ class BishopPlayer
 
 
   def take_turn(raw_state, ships_remaining)
-    state = State.new(raw_state)
+    @turn ||= 0
+    @turn += 1
     
     # For the first few turns, with only a look-ahead of 1 turn, the shots fired will be all in the bottom right.
     # To mix things up a bit, go random for the first few shots!
-    if state.turn < 5
-      shot = state.random_unknown_square
+    @previous_shots ||= []
+    if @turn < 5
+      shot = [rand(10),rand(10)]
+      while(@previous_shots.include? shot)
+        shot = [rand(10),rand(10)]
+      end
+      @previous_shots << shot
+      puts "shooting at #{shot[0]},#{shot[1]}"
       return shot
     end
     
@@ -30,12 +41,17 @@ class BishopPlayer
     # don't bother looking in areas smaller than the smallest ship left
     # that's it
     
-    # try every move and go for it if it lowers the number of areas the largest ship left can hide in.
-    if state.squares_on_the_end_of_longest_hit_streak.any?    
-      squares = state.squares_on_the_end_of_longest_hit_streak
-    else
+    # try every move and go for it if it lowers the number of areas
+    # the largest ship left can hide in
+    
+    state = State.new(raw_state)
+    # if state.squares_in_gap_of_length(ships_remaining.sort.last).any?    
+    #   squares = state.squares_in_gap_of_length(ships_remaining.sort.last)
+    # 
+    #   # raise squares.length.to_s
+    # else
       squares = state.squares_in_gap_of_length(ships_remaining.sort.last)
-    end
+    # end
     
     raise "No squares!" if squares.empty?
     
@@ -48,6 +64,8 @@ class BishopPlayer
       new_state = State.new(new_raw_state)
       new_squares = new_state.squares_in_gap_of_length(ships_remaining.sort.last)
 
+      # puts "trying #{shot[0]},#{shot[1]}"
+
       if new_squares.length <= least_squares
         least_squares = new_squares.length
         if new_squares.length < least_squares
@@ -59,9 +77,10 @@ class BishopPlayer
     end
     
     shot = best_shots.shuffle.first    
-    
-    raise "Shot is nil!" if shot.nil?
-    raise "Same shot again!" if state.previous_shots.include? shot
+    puts @turn
+        
+    raise "Same shot again!" if @previous_shots.include? shot
+    @previous_shots << shot
     return shot
   end
   
@@ -72,30 +91,6 @@ class State
   attr_reader :raw_state
   def initialize(raw_state)
     @raw_state = raw_state
-  end
-  
-  def turn
-    return @raw_state.flatten.select { |result| result != :unknown }.length
-  end
-  
-  def random_unknown_square
-    x = rand(10)
-    y = rand(10)
-    while @raw_state[x][y] != :unknown
-      x = rand(10)
-      y = rand(10)
-    end
-    return [y, x]
-  end
-  
-  def previous_shots
-    shots = []
-    10.times do |x|
-      10.times do |y|
-        shots << [y, x] if @raw_state[x][y] != :unknown
-      end
-    end
-    return shots
   end
   
   def rows
@@ -197,16 +192,28 @@ class State
     column_squares  = squares_on_the_end_of_longest_hit_streak_for_lines(@biggest_streak, columns,  column = true)
     biggest_column_streak = @biggest_streak
     
+    # puts "row squares:"
+    # puts row_squares
+    # puts "@ length #{row_squares.length}"
+    # 
+    # puts "col squares:"
+    # puts column_squares
+    # puts "@ length #{column_squares.length}"
+    
     if biggest_row_streak > biggest_column_streak
+      # puts "rows bigger"
       return row_squares
     elsif biggest_column_streak > biggest_row_streak
+      # puts "cols bigger"
       return column_squares
     else
+      # puts "both same"
       return row_squares + column_squares
     end
   end
         
   def squares_on_the_end_of_longest_hit_streak_for_lines(biggest_streak, lines, column = false)
+    # puts biggest_streak
     squares = []
     
     10.times do |line_index|
@@ -219,6 +226,7 @@ class State
             if streak >= @biggest_streak
               squares = []
               @biggest_streak = streak
+              # puts "setting streak to #{streak}"
               
               if column
                 next unless (0..9).include? line_index
